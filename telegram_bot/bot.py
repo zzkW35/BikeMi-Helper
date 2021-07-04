@@ -96,8 +96,10 @@ class TelegramBot:
                     reply_markup=reply_markup,
                 )
             else:
-                update.message.reply_text(encode(
-                    ":x: This BikeMi station doesn't exist, please choose a new command"),
+                update.message.reply_text(
+                    encode(
+                        ":x: This BikeMi station doesn't exist, please choose a new command"
+                    ),
                     reply_markup=self.tools.custom_keyboard(),
                 )
 
@@ -165,7 +167,7 @@ class TelegramBot:
             )
             context.user_data["command"] = "search"
 
-        if update.message.text == "/nearest" or update.message.text == encode(
+        elif update.message.text == "/nearest" or update.message.text == encode(
             ":walking: Nearest Station"
         ):
             update.message.reply_text(
@@ -175,7 +177,7 @@ class TelegramBot:
             )
             context.user_data["command"] = "nearest"
 
-        if update.message.text == "/location":
+        elif update.message.text == "/location":
             reply_markup = self.tools.custom_keyboard()
             update.message.reply_text(
                 encode(
@@ -184,6 +186,15 @@ class TelegramBot:
                 reply_markup=reply_markup,
             )
             context.user_data["command"] = "location"
+
+        else:
+            update.message.reply_text(
+                encode(
+                    ":exclamation: I don't recognise such command, please select a new one from below"
+                ),
+                reply_markup=self.tools.custom_keyboard(),
+            )
+            return ConversationHandler.END
 
         return self.HANDLE_COMMAND
 
@@ -248,6 +259,18 @@ class TelegramBot:
                     self.read_command,
                 ),
                 CommandHandler("location", self.read_command),
+                MessageHandler(
+                    Filters.text
+                    & ~(
+                        Filters.location
+                        | Filters.regex("/search")
+                        | Filters.regex("/nearest")
+                        | Filters.regex("/location")
+                        | Filters.regex(encode(":mag_right: Search Station"))
+                        | Filters.regex(encode(":walking: Nearest Station"))
+                    ),
+                    self.read_command,
+                ),
             ],
             states={
                 self.HANDLE_COMMAND: [
