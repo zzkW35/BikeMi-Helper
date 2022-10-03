@@ -24,7 +24,7 @@ from telegram.ext import (
     MessageHandler,
     Updater,
 )
-from tools import Tools
+from tools import Tools # pylint: disable=import-error
 
 
 class TelegramBot:
