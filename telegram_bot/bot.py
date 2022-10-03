@@ -1,11 +1,14 @@
-from bikemi_unofficial_api.bikemi import BikeMiApi
-from tools import Tools
+"""
+Module for Telegram Bot
+"""
 
 import os
 import logging
 import sys
 import json
+from threading import Thread
 
+from bikemi_unofficial_api.bikemi import BikeMiApi
 from emojis import encode
 from geopy.geocoders import MapBox
 from telegram import (
@@ -21,10 +24,11 @@ from telegram.ext import (
     MessageHandler,
     Updater,
 )
-from threading import Thread
+from tools import Tools
 
 
 class TelegramBot:
+    """Telegram Bot class"""
     STATION_INFO = "https://gbfs.urbansharing.com/bikemi.com/station_information.json"
 
     tools = Tools()
@@ -37,7 +41,8 @@ class TelegramBot:
     )
 
     # Start command
-    def start(self, update, context):
+    def start(self, update, context): # pylint: disable=unused-argument
+        """Send a message when the command /start is issued."""
         reply_markup = self.tools.custom_keyboard()
 
         update.message.reply_text(
@@ -56,7 +61,7 @@ class TelegramBot:
 
     def print_result(self, station_raw):
         """Display station's info"""
-        stationInfo = (
+        station_info = (
             encode(":busstop: Name: ")
             + station_raw["title"]
             + "\n"
@@ -75,9 +80,10 @@ class TelegramBot:
             + encode(":parking: Available docks: ")
             + str(station_raw["availableDocks"])
         )
-        return stationInfo
+        return station_info
 
     def search_station(self, update, context, place):
+        """Search a station by name"""
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
@@ -85,7 +91,7 @@ class TelegramBot:
         stations_full_info = self.pull_stations()
 
         for station_raw in self.api.find_station(stations_full_info, place):
-            if station_raw != None:
+            if station_raw is not None:
                 station = self.print_result(station_raw)
                 reply_markup = self.tools.inline_keyboard_buttons(station_raw)
                 # Send Text
@@ -96,12 +102,14 @@ class TelegramBot:
             else:
                 update.message.reply_text(
                     encode(
-                        ":x: This BikeMi station doesn't exist, please choose a new command"
+                        """:x: This BikeMi station doesn't exist,
+                        please choose a new command"""
                     ),
                     reply_markup=self.tools.custom_keyboard(),
                 )
 
     def search_nearest(self, update, context, place):
+        """Search the nearest station to a given place"""
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
@@ -128,6 +136,7 @@ class TelegramBot:
         )
 
     def get_location(self, update, context):
+        """Get location from user and find the nearest station"""
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
@@ -156,6 +165,7 @@ class TelegramBot:
     HANDLE_COMMAND = range(1)
 
     def read_command(self, update: Update, context: CallbackContext) -> int:
+        """Read the command from the user"""
 
         if update.message.text == "/search" or update.message.text == encode(
             ":mag_right: Search Station"
@@ -179,7 +189,8 @@ class TelegramBot:
             reply_markup = self.tools.custom_keyboard()
             update.message.reply_text(
                 encode(
-                    ":round_pushpin: Share your current location to get the nearest station to you \n \n /cancel"
+                    """:round_pushpin: Share your current location
+                    to get the nearest station to you \n \n /cancel"""
                 ),
                 reply_markup=reply_markup,
             )
@@ -196,7 +207,8 @@ class TelegramBot:
         else:
             update.message.reply_text(
                 encode(
-                    ":exclamation: I don't recognise such command, please select a new one from below"
+                    """:exclamation: I don't recognise such command,
+                    please select a new one from below"""
                 ),
                 reply_markup=self.tools.custom_keyboard(),
             )
@@ -206,6 +218,7 @@ class TelegramBot:
         return self.HANDLE_COMMAND
 
     def handle_command(self, update: Update, context: CallbackContext) -> int:
+        """Handle the command from the user"""
         context.user_data["place"] = update.message.text
         place = context.user_data["place"]
         context.user_data["location"] = update.message["location"]
@@ -222,7 +235,7 @@ class TelegramBot:
         return ConversationHandler.END
 
     def cancel_command(self, update: Update, context: CallbackContext) -> int:
-        """Cancels and ends the conversation."""
+        """Cancel and end the conversation."""
         reply_markup = self.tools.custom_keyboard()
         update.message.reply_text(
             encode(":thumbsup: Canceled!"), reply_markup=reply_markup
@@ -231,6 +244,7 @@ class TelegramBot:
         return ConversationHandler.END
 
     def wrong_input(self, update: Update, context: CallbackContext) -> int:
+        """Handle the wrong input from the user"""
         reply_markup = self.tools.custom_keyboard()
         update.message.reply_text(
             "That isn't the name of a BikeMi station, cancelling...",
@@ -242,11 +256,12 @@ class TelegramBot:
     # End ConversationHandler functions
 
     def main(self):
+        """Main function"""
         telegram_token = os.environ.get("TELEGRAM_TOKEN")
         updater = Updater(token=telegram_token, use_context=True)
 
         # Register handlers
-        self.dispatcher = updater.dispatcher
+        self.dispatcher = updater.dispatcher # pylint: disable=attribute-defined-outside-init
 
         # Start command
         start_handler = CommandHandler("start", self.start)
@@ -254,12 +269,14 @@ class TelegramBot:
 
         # Function to stop and restart the bot from the chat
         def stop_and_restart():
-            """Gracefully stop the Updater and replace the current process with a new one"""
+            """Gracefully stop the Updater and replace the current
+            process with a new one"""
             updater.stop()
             os.execl(sys.executable, sys.executable, *sys.argv)
 
         # Function to stop the bot from the chat
-        def restart(update, context):
+        def restart(update, context): # pylint: disable=unused-argument
+            """Command to restart the bot"""
             update.message.reply_text("Bot is restarting...")
             Thread(target=stop_and_restart).start()
 

@@ -1,3 +1,6 @@
+"""
+Module for tools
+"""
 from emojis import encode
 
 from telegram import (
@@ -9,6 +12,8 @@ from telegram import (
 
 
 class Tools:
+    """Extra tools like custom keyboard, inline keyboard buttons, etc"""
+
     def build_menu(self, buttons, n_cols, header_buttons=None, footer_buttons=None):
         """Function to build the Inline Keyboard Button menu"""
         menu = [buttons[i : i + n_cols] for i in range(0, len(buttons), n_cols)]
@@ -19,7 +24,8 @@ class Tools:
         return menu
 
     def callback_query(self, update, context):
-        """Display the Inline Keyboard Buttons when the user taps on the "Main Menu" button"""
+        """Display the Inline Keyboard Buttons when the user
+        taps on the "Main Menu" button"""
         query = update.callback_query
         reply_markup = self.custom_keyboard()
         # CallbackQueries need to be answered, even if no notification to the user is needed
